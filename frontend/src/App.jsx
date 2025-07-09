@@ -4,7 +4,6 @@ import Home from './Pages/Home';
 import Playground from './Pages/Playground';
 import { ToastContainer } from 'react-toastify';
 import { SocketProvider } from './Context/SocketContext';
-import { PeerProvider } from './Context/PeerContext';
 
 const App = () => {
   return (
@@ -18,9 +17,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="/playground/:roomId" element={
             <SocketProvider>
-              <PeerProvider>
                 <Playground />
-              </PeerProvider>
             </SocketProvider>
           } />
         </Routes>

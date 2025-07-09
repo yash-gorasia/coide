@@ -16,39 +16,18 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         const init = async () => {
-            try {
-                console.log('Initializing socket connection...');
-                socketRef.current = await initSocket();
+            socketRef.current = await initSocket();
 
-                // Connection event handlers
-                socketRef.current.on("connect", () => {
-                    console.log("Socket connected successfully");
-                    toast.success("Connected to server");
-                });
+            socketRef.current.on("connect_error", handleErrors);
+            socketRef.current.on("connect_failed", handleErrors);
 
-                socketRef.current.on("disconnect", (reason) => {
-                    console.log("Socket disconnected:", reason);
-                    toast.warning("Disconnected from server");
-                });
+            function handleErrors(err) {
+                console.log("Socket error:", err);
+                toast.error("Socket connection failed.");
+                navigate("/");
+            }
 
-                socketRef.current.on("connect_error", handleErrors);
-                socketRef.current.on("connect_failed", handleErrors);
-                socketRef.current.on("reconnect_error", handleErrors);
-
-                function handleErrors(err) {
-                    console.error("Socket error:", err);
-                    console.error("Error details:", {
-                        message: err.message,
-                        description: err.description,
-                        context: err.context,
-                        type: err.type
-                    });
-                    toast.error(`Socket connection failed: ${err.message || 'Unknown error'}`);
-                    // Don't navigate immediately, give time for retries
-                    setTimeout(() => navigate("/"), 5000);
-                }
-
-                socketRef.current.emit(ACTIONS.JOIN, { roomId, username });
+            socketRef.current.emit(ACTIONS.JOIN, { roomId, username });
 
             socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId }) => {
                 if (socketId !== socketRef.current.id) {
@@ -61,11 +40,6 @@ export const SocketProvider = ({ children }) => {
                 toast.success(`${username} left the room`);
                 setClients((prev) => prev.filter((client) => client.socketId !== socketId));
             });
-            } catch (error) {
-                console.error("Failed to initialize socket:", error);
-                toast.error("Failed to connect to server");
-                navigate("/");
-            }
         };
 
         init();

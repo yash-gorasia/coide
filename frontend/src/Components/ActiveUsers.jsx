@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSocket } from "../Context/SocketContext";
 import { toast } from "react-toastify";
 import Client from "./Client";
-import VideoCalling from "./VideoCalling"; // Import the VideoCalling component
+// import VideoCalling from "./VideoCalling"; 
 
 const ActiveUsers = () => {
   const { clients } = useSocket(); // Get the list of connected users
@@ -35,7 +35,7 @@ const ActiveUsers = () => {
           ))}
         </div>
         <div className="mt-8">
-        <VideoCalling />
+        {/* <VideoCalling /> */}
         </div>
       </div>
       <div className="mt-auto space-y-3 pt-4">
