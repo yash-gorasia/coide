@@ -134,7 +134,7 @@ npm run dev         # Development with nodemon
 2. Set environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
 
-### Backend (Railway/Heroku)
+### Backend (render)
 1. Set environment variables in your platform
 2. Ensure PORT is configured for dynamic port binding
 3. Update frontend VITE_WS_URL to your backend URL
@@ -147,15 +147,9 @@ npm run dev         # Development with nodemon
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the ISC License.
-
 ## 👨‍💻 Author
 
 **Yash Gorasia**
 - GitHub: [@yash-gorasia](https://github.com/yash-gorasia)
 
----
 
-⭐ Star this repository if you find it helpful!
