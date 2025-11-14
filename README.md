@@ -42,22 +42,28 @@ cd coide
 
 ### 2. Install dependencies
 ```bash
-# Install root dependencies
+# Install all dependencies (frontend and backend)
 npm install
 
 # Install frontend dependencies
-cd frontend && npm install
-
-# Install backend dependencies
-cd ../backend && npm install
+cd frontend && npm install && cd ..
 ```
 
 ### 3. Environment Setup
 
-Create a `.env` file in the **backend** directory:
+Create a `.env` file in the **root** directory:
 ```bash
+# Server Configuration
 PORT=8000
 NODE_ENV=development
+
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/coide
+# OR use MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/coide
+
+# JWT Configuration  
+JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_secure
+JWT_EXPIRES_IN=7d
 ```
 
 Create a `.env` file in the **frontend** directory:
@@ -98,14 +104,21 @@ coide/
 │   ├── src/
 │   │   ├── Components/       # Reusable UI components
 │   │   ├── Context/          # React context providers
-│   │   ├── Pages/           # Main pages (Home, Playground)
+│   │   ├── Pages/           # Main pages (Home, Playground, Login, Register)
 │   │   ├── Constants/       # Configuration and constants
 │   │   └── Socket/          # Socket.IO client setup
 │   └── public/              # Static assets and themes
 ├── backend/                 # Express backend
-│   ├── index.js            # Server entry point
-│   └── utils/              # Utilities and socket events
-└── package.json            # Root package configuration
+│   ├── config/              # Database configuration
+│   ├── middleware/          # Authentication middleware
+│   ├── models/              # Database models (User)
+│   ├── routes/              # API routes (auth)
+│   ├── socket/              # Socket.IO handlers
+│   ├── utils/               # Utilities and socket events
+│   └── index.js             # Server entry point
+├── .env.example             # Environment variables template
+├── package.json             # Root dependencies and scripts
+└── README.md                # Project documentation
 ```
 
 ## 🔧 Available Scripts

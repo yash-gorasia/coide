@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import ActiveUsers from '../Components/ActiveUsers'
 import CodeEditorWindow from '../Components/CodeEditorWindow'
+import FileExplorer from '../Components/FileExplorer'
 import LanguagesDropdown from '../Components/LanguagesDropdown'
 import { languageOptions } from '../Constants/languageOptions'
 import ThemeDropdown from '../Components/ThemeDropdown'
@@ -11,15 +12,19 @@ import OutputWindow from '../Components/OutputWindow'
 import OutputDetails from '../Components/OutputDetails'
 import { toast } from 'react-toastify'
 import { useSocket } from '../Context/SocketContext'
+import { useFiles } from '../Context/FileContext'
 import ACTIONS from '../Constants/socketEvents'
 
 const javascriptDefault = `// Write your code here\nconsole.log("Hello World!");`
 
 const Playground = () => {
   const { socket } = useSocket();
+  const { activeFile, updateFile } = useFiles();
   const roomId = localStorage.getItem("room-id")
   const username = localStorage.getItem("username")
-  const [code, setCode] = useState(javascriptDefault)
+  
+  // Use active file content or default
+  const [code, setCode] = useState(activeFile?.content || javascriptDefault)
   const [language, setLanguage] = useState(languageOptions[0])
   const [theme, setTheme] = useState("Oceanic Next")
   const [processing, setProcessing] = useState(false)
@@ -30,6 +35,21 @@ const Playground = () => {
   if (!roomId || !username) {
     navigate('/')
   }
+
+  // Update code when active file changes
+  useEffect(() => {
+    if (activeFile) {
+      setCode(activeFile.content || '');
+      
+      // Set language based on file
+      const fileLanguage = languageOptions.find(lang => 
+        lang.value === activeFile.language
+      );
+      if (fileLanguage) {
+        setLanguage(fileLanguage);
+      }
+    }
+  }, [activeFile]);
 
   const handleCompile = () => {
     setProcessing(true);
@@ -112,10 +132,20 @@ const Playground = () => {
     }
   };
 
-  const onChange = (action, data) => {
+  const onChange = async (action, data) => {
     switch (action) {
       case "code": {
         setCode(data);
+        
+        // Save to active file if one is selected
+        if (activeFile) {
+          await updateFile(activeFile._id, data, activeFile.language);
+        }
+        
+        // Emit socket event for real-time sync
+        if (socket) {
+          socket.emit(ACTIONS.CODE_CHANGE, { roomId, code: data });
+        }
       }
         break;
       default: {
@@ -177,53 +207,85 @@ const Playground = () => {
 
   // In your Playground.jsx, modify the return statement to look like this:
   return (
-    <div className="flex flex-col bg-zinc-900 min-h-screen p-4 relative">
+    <div className="flex h-screen bg-zinc-900">
+      {/* File Explorer Sidebar */}
+      <FileExplorer />
+
       {/* Main Content Area */}
-      <div className="flex flex-1 space-x-4">
-        {/* ActiveUsers Sidebar */}
-        <div className="w-64 flex-shrink-0 bg-zinc-800 rounded-lg p-4 shadow-md">
-          <ActiveUsers />
-        </div>
-
-        {/* Code Editor Section */}
-        <div className="flex-1 flex flex-col space-y-4">
-          <div className="flex space-x-4">
-            <LanguagesDropdown onSelectChange={onSelectChange} />
-            <ThemeDropdown handleThemeChange={handleThemeChange} theme={theme} />
+      <div className="flex flex-1 flex-col">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-lg font-semibold text-white">
+              {activeFile ? activeFile.fileName : 'No file selected'}
+            </h1>
+            <div className="flex space-x-2">
+              <LanguagesDropdown onSelectChange={onSelectChange} />
+              <ThemeDropdown handleThemeChange={handleThemeChange} theme={theme} />
+            </div>
           </div>
-          <CodeEditorWindow
-            code={code}
-            onChange={onChange}
-            language={language?.value}
-            theme={theme.value}
-          />
+          
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleCompile}
+              disabled={!code || processing || !activeFile}
+              className={`px-4 py-2 rounded-lg text-white font-medium transition-all ${
+                !code || processing || !activeFile
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-purple-500 shadow-md hover:shadow-lg"
+              }`}
+            >
+              {processing ? "Processing..." : "Compile and Execute"}
+            </button>
+          </div>
         </div>
 
-        {/* Output Section */}
-        <div className="w-1/4 flex flex-col space-y-4 bg-zinc-800 rounded-lg p-4 shadow-md">
-          <h2 className="text-lg font-semibold text-white">Output</h2>
-          <OutputWindow outputDetails={outputDetails} />
-          <button
-            onClick={handleCompile}
-            disabled={!code || processing}
-            className={`w-full px-4 py-2 rounded-lg text-white font-medium transition-all
-                    ${!code || processing
-                ? "bg-gray-600 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-purple-500 shadow-md hover:shadow-lg"
-              }
-                    flex items-center justify-center gap-2`}
-          >
-            {processing ? (
-              <>Processing...</>
+        {/* Editor and Output Area */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Code Editor */}
+          <div className="flex-1 flex flex-col">
+            {activeFile ? (
+              <CodeEditorWindow
+                code={code}
+                onChange={onChange}
+                language={language?.value}
+                theme={theme.value}
+              />
             ) : (
-              "Compile and Execute"
+              <div className="flex-1 flex items-center justify-center bg-gray-800 text-gray-400">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📝</div>
+                  <h3 className="text-lg font-medium mb-2">No file selected</h3>
+                  <p className="text-sm">Create a new file or select an existing one from the sidebar</p>
+                </div>
+              </div>
             )}
-          </button>
-          {outputDetails && <OutputDetails outputDetails={outputDetails} />}
+          </div>
+
+          {/* Output Panel */}
+          <div className="w-1/3 flex flex-col border-l border-gray-700">
+            <div className="p-4 border-b border-gray-700 bg-gray-800">
+              <h2 className="text-lg font-semibold text-white">Output</h2>
+            </div>
+            <div className="flex-1 flex flex-col p-4 space-y-4 overflow-hidden">
+              <div className="flex-1 min-h-0">
+                <OutputWindow outputDetails={outputDetails} />
+              </div>
+              {outputDetails && (
+                <div className="flex-shrink-0">
+                  <OutputDetails outputDetails={outputDetails} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Active Users - Bottom Left, aligned with File Explorer */}
+        <div className="absolute bottom-0 left-0 z-10">
+          <ActiveUsers />
         </div>
       </div>
     </div>
-
   );
 }
 

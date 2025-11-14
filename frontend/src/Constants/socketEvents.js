@@ -7,6 +7,14 @@ const ACTIONS = {
     CODE_CHANGE: 'code-change',
     CODE_EXECUTION_RESULT: 'code-execution-result',
 
+    // File Management Events
+    FILE_CREATED: 'file-created',
+    FILE_UPDATED: 'file-updated',
+    FILE_DELETED: 'file-deleted',
+    FILE_RENAMED: 'file-renamed',
+    FILE_OPENED: 'file-opened',
+    SYNC_FILES: 'sync-files',
+
     // WebRTC Events
     CALL_USER: 'call-user',
     INCOMING_CALL: 'incoming-call',

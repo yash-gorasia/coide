@@ -10,24 +10,39 @@ const SocketContext = createContext();
 export const SocketProvider = ({ children }) => {
     const roomId = localStorage.getItem("room-id");
     const username = localStorage.getItem("username");
+    const token = localStorage.getItem("token");
     const [clients, setClients] = useState([]);
     const socketRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
+        // Check if user is authenticated
+        if (!token || !username) {
+            navigate("/login");
+            return;
+        }
+
         const init = async () => {
-            socketRef.current = await initSocket();
+            socketRef.current = await initSocket(token);
 
             socketRef.current.on("connect_error", handleErrors);
             socketRef.current.on("connect_failed", handleErrors);
 
             function handleErrors(err) {
                 console.log("Socket error:", err);
+                if (err.message === 'Authentication failed' || err.message === 'Authentication token required') {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('username');
+                    toast.error("Authentication failed. Please login again.");
+                    navigate("/login");
+                    return;
+                }
                 toast.error("Socket connection failed.");
                 navigate("/");
             }
 
-            socketRef.current.emit(ACTIONS.JOIN, { roomId, username });
+            socketRef.current.emit(ACTIONS.JOIN, { roomId });
 
             socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId }) => {
                 if (socketId !== socketRef.current.id) {
@@ -35,7 +50,6 @@ export const SocketProvider = ({ children }) => {
                 }
                 setClients(clients);
             });
-
             socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
                 toast.success(`${username} left the room`);
                 setClients((prev) => prev.filter((client) => client.socketId !== socketId));
@@ -49,10 +63,11 @@ export const SocketProvider = ({ children }) => {
                 socketRef.current.off("connect_error");
                 socketRef.current.off("connect_failed");
                 socketRef.current.off(ACTIONS.JOINED);
+                socketRef.current.off(ACTIONS.DISCONNECTED);
                 socketRef.current.disconnect();
             }
         };
-    }, [roomId, username, navigate]);
+    }, [roomId, username, navigate, token]);
 
     return (
         <SocketContext.Provider value={{ socket: socketRef.current, clients }}>
