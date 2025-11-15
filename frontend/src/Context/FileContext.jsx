@@ -28,7 +28,7 @@ export const FileProvider = ({ children }) => {
         try {
             setLoading(true);
             const response = await axios.get(
-                `${import.meta.env.VITE_WS_URL}/api/files/room/${roomId}`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/files/room/${roomId}`,
                 { headers: getHeaders() }
             );
             
@@ -54,7 +54,7 @@ export const FileProvider = ({ children }) => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_WS_URL}/api/files`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/files`,
                 { fileName, language, content, roomId },
                 { headers: getHeaders() }
             );
@@ -85,7 +85,7 @@ export const FileProvider = ({ children }) => {
 
         try {
             const response = await axios.put(
-                `${import.meta.env.VITE_WS_URL}/api/files/${fileId}`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/files/${fileId}`,
                 { content, language },
                 { headers: getHeaders() }
             );
@@ -121,7 +121,7 @@ export const FileProvider = ({ children }) => {
 
         try {
             const response = await axios.patch(
-                `${import.meta.env.VITE_WS_URL}/api/files/${fileId}/rename`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/files/${fileId}/rename`,
                 { fileName },
                 { headers: getHeaders() }
             );
@@ -158,7 +158,7 @@ export const FileProvider = ({ children }) => {
 
         try {
             const response = await axios.delete(
-                `${import.meta.env.VITE_WS_URL}/api/files/${fileId}`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/files/${fileId}`,
                 { headers: getHeaders() }
             );
 

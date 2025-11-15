@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import File from '../models/File.js';
+import Room from '../models/Room.js';
 import ACTIONS from '../utils/socketEvents.js';
 
 const userMap = {};
@@ -52,28 +53,42 @@ export const handleSocketConnection = (io) => {
             userId: socket.user._id
         };
 
-        socket.on(ACTIONS.JOIN, ({ roomId }) => {
-            socket.join(roomId);
+        socket.on(ACTIONS.JOIN, async ({ roomId }) => {
+            try {
+                socket.join(roomId);
 
-            // Send the latest code to the newly joined user
-            if (roomCode[roomId]) {
-                setTimeout(() => {
-                    socket.emit(ACTIONS.SYNC_CODE, { code: roomCode[roomId] });
-                }, 400);
-            }
+                // Update room participant status
+                const room = await Room.findOne({ roomId, isActive: true });
+                if (room) {
+                    await room.addParticipant(socket.user._id, socket.user.username);
+                    console.log(`Updated room ${roomId} with participant ${socket.user.username}`);
+                } else {
+                    console.log(`Room ${roomId} not found in database, using temporary session`);
+                }
 
-            const clients = getAllConnectedClients(io, roomId);
-            
-            // Notify all clients about the new user
-            clients.forEach(({ socketId }) => {
-                io.to(socketId).emit(ACTIONS.JOINED, {
-                    clients,
-                    username: socket.user.username,
-                    socketId: socket.id
+                // Send the latest code to the newly joined user
+                if (roomCode[roomId]) {
+                    setTimeout(() => {
+                        socket.emit(ACTIONS.SYNC_CODE, { code: roomCode[roomId] });
+                    }, 400);
+                }
+
+                const clients = getAllConnectedClients(io, roomId);
+                
+                // Notify all clients about the new user
+                clients.forEach(({ socketId }) => {
+                    io.to(socketId).emit(ACTIONS.JOINED, {
+                        clients,
+                        username: socket.user.username,
+                        socketId: socket.id
+                    });
                 });
-            });
 
-            console.log(`User ${socket.user.username} joined room ${roomId}`);
+                console.log(`User ${socket.user.username} joined room ${roomId}`);
+            } catch (error) {
+                console.error('Error joining room:', error);
+                socket.emit('error', { message: 'Failed to join room' });
+            }
         });
 
         socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
@@ -125,15 +140,28 @@ export const handleSocketConnection = (io) => {
             });
         });
 
-        socket.on('disconnecting', () => {
+        socket.on('disconnecting', async () => {
             const rooms = [...socket.rooms];
 
-            rooms.forEach((roomId) => {
-                socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
-                    socketId: socket.id,
-                    username: socket.user.username
-                });
-            });
+            // Update room activity for persistent rooms
+            for (const roomId of rooms) {
+                if (roomId !== socket.id) { // Skip the default room which is the socket ID
+                    try {
+                        const room = await Room.findOne({ roomId, isActive: true });
+                        if (room) {
+                            await room.removeParticipant(socket.user._id);
+                            console.log(`Removed participant ${socket.user.username} from room ${roomId}`);
+                        }
+                    } catch (error) {
+                        console.error('Error updating room on disconnect:', error);
+                    }
+                    
+                    socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
+                        socketId: socket.id,
+                        username: socket.user.username
+                    });
+                }
+            }
 
             delete userMap[socket.id];
             console.log(`User ${socket.user.username} disconnected`);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import ActiveUsers from '../Components/ActiveUsers'
 import CodeEditorWindow from '../Components/CodeEditorWindow'
@@ -20,7 +20,7 @@ const javascriptDefault = `// Write your code here\nconsole.log("Hello World!");
 const Playground = () => {
   const { socket } = useSocket();
   const { activeFile, updateFile } = useFiles();
-  const roomId = localStorage.getItem("room-id")
+  const { roomId } = useParams(); // Get room ID from URL
   const username = localStorage.getItem("username")
   
   // Use active file content or default
@@ -32,9 +32,19 @@ const Playground = () => {
 
   const navigate = useNavigate();
 
-  if (!roomId || !username) {
-    navigate('/')
-  }
+  // Store room ID in localStorage when component mounts (for backward compatibility)
+  useEffect(() => {
+    if (roomId) {
+      localStorage.setItem("room-id", roomId);
+    }
+  }, [roomId]);
+
+  // Redirect to home if no authentication or room ID
+  useEffect(() => {
+    if (!roomId || !username) {
+      navigate('/');
+    }
+  }, [roomId, username, navigate]);
 
   // Update code when active file changes
   useEffect(() => {

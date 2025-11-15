@@ -21,8 +21,10 @@ const ActiveUsers = () => {
   };
 
   const handleLeave = () => {
+    // Only clear room-specific data, keep user authentication
+    localStorage.removeItem("room-id");
+    localStorage.removeItem("room-name");
     navigate("/");
-    localStorage.clear();
   };
 
   return (

@@ -24,7 +24,7 @@ const Login = () => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_WS_URL}/api/auth/login`,
+                `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
                 formData
             );
 
@@ -33,6 +33,7 @@ const Login = () => {
                 localStorage.setItem('token', response.data.token);
                 localStorage.setItem('user', JSON.stringify(response.data.user));
                 localStorage.setItem('username', response.data.user.username);
+                localStorage.setItem('user-id', response.data.user._id);
                 
                 toast.success('Login successful!');
                 navigate('/');

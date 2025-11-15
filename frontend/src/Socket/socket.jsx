@@ -11,5 +11,5 @@ export const initSocket = async (token) => {
             token: token
         }
     };
-    return io(import.meta.env.VITE_WS_URL, options);
+    return io(import.meta.env.VITE_BACKEND_URL, options);
 }

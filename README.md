@@ -68,7 +68,7 @@ JWT_EXPIRES_IN=7d
 
 Create a `.env` file in the **frontend** directory:
 ```bash
-VITE_WS_URL=http://localhost:8000
+VITE_BACKEND_URL=http://localhost:8000
 VITE_RAPID_API_URL=https://judge0-ce.p.rapidapi.com/submissions
 VITE_RAPID_API_HOST=judge0-ce.p.rapidapi.com
 VITE_RAPID_API_KEY=your_rapidapi_key_here
@@ -150,7 +150,7 @@ npm run dev         # Development with nodemon
 ### Backend (render)
 1. Set environment variables in your platform
 2. Ensure PORT is configured for dynamic port binding
-3. Update frontend VITE_WS_URL to your backend URL
+3. Update frontend VITE_BACKEND_URL to your backend URL
 
 ## 🤝 Contributing
 

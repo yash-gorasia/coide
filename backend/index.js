@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { connectDB } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import fileRoutes from './routes/files.js';
+import roomRoutes from './routes/rooms.js';
 import { authenticateSocket, handleSocketConnection } from './socket/socketHandler.js';
 
 // Get the directory name of the current module
@@ -27,7 +28,7 @@ connectDB();
 
 // Middleware
 app.use(cors({
-    origin: ["http://localhost:5173", "https://coide.vercel.app"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "https://coide.vercel.app"],
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -36,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/rooms', roomRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
