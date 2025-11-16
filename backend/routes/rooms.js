@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get file count for each room and include participant count
     const roomsWithDetails = await Promise.all(
       rooms.map(async (room) => {
-        const fileCount = await File.countDocuments({ roomId: room.roomId });
+        const fileCount = await File.countDocuments({ roomId: room.roomId, isActive: true });
         const roomObj = room.toObject({ virtuals: true });
         roomObj.fileCount = fileCount;
         roomObj.participantCount = room.participants.length;
@@ -238,6 +238,13 @@ router.put('/:roomId/join',
 
       // Add user as participant
       await room.addParticipant(userId, username);
+
+      // Sync file count to ensure accuracy
+      const actualFileCount = await File.countDocuments({ roomId, isActive: true });
+      if (room.fileCount !== actualFileCount) {
+        room.fileCount = actualFileCount;
+        await room.save();
+      }
 
       // Return updated room
       const updatedRoom = await Room.findById(room._id)

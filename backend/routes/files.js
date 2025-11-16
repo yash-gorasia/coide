@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import File from '../models/File.js';
+import Room from '../models/Room.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -115,6 +116,13 @@ router.post('/', [
         });
 
         await file.save();
+        
+        // Update room file count
+        const activeFileCount = await File.countDocuments({ roomId, isActive: true });
+        await Room.findOneAndUpdate(
+            { roomId },
+            { fileCount: activeFileCount, lastActivity: new Date() }
+        );
         
         // Populate user data before sending response
         await file.populate('createdBy', 'username');
@@ -278,6 +286,13 @@ router.delete('/:fileId', authenticateToken, async (req, res) => {
         file.isActive = false;
         file.lastModifiedBy = req.user._id;
         await file.save();
+
+        // Update room file count
+        const activeFileCount = await File.countDocuments({ roomId: file.roomId, isActive: true });
+        await Room.findOneAndUpdate(
+            { roomId: file.roomId },
+            { fileCount: activeFileCount, lastActivity: new Date() }
+        );
 
         res.json({
             success: true,
