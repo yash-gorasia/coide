@@ -206,8 +206,10 @@ router.patch('/:fileId/rename', [
     body('fileName')
         .notEmpty()
         .withMessage('File name is required')
-        .isLength({ max: 100 })
-        .withMessage('File name too long')
+        .isLength({ min: 1, max: 100 })
+        .withMessage('File name must be between 1 and 100 characters')
+        .matches(/^[^<>:"/\\|?*\x00-\x1f]+$/)
+        .withMessage('File name contains invalid characters')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);

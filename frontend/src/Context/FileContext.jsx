@@ -117,7 +117,10 @@ export const FileProvider = ({ children }) => {
 
     // Rename file
     const renameFile = async (fileId, fileName) => {
-        if (!fileId || !fileName || !token) return;
+        if (!fileId || !fileName || !token) {
+            toast.error('Invalid file data');
+            return false;
+        }
 
         try {
             const response = await axios.patch(
@@ -144,11 +147,15 @@ export const FileProvider = ({ children }) => {
                 
                 toast.success('File renamed successfully');
                 return renamedFile;
+            } else {
+                toast.error(response.data.message || 'Failed to rename file');
+                return false;
             }
         } catch (error) {
+            console.error('Rename file error:', error);
             const errorMessage = error.response?.data?.message || 'Failed to rename file';
             toast.error(errorMessage);
-            return null;
+            return false;
         }
     };
 

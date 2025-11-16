@@ -41,7 +41,13 @@ const FileExplorer = () => {
     };
 
     const handleRename = async (fileId) => {
-        if (!editFileName.trim()) return;
+        if (!editFileName.trim()) {
+            cancelEditing();
+            return;
+        }
+        
+        // Prevent duplicate calls
+        if (editingFileId !== fileId) return;
         
         const success = await renameFile(fileId, editFileName.trim());
         
@@ -156,10 +162,22 @@ const FileExplorer = () => {
                                             <input
                                                 value={editFileName}
                                                 onChange={(e) => setEditFileName(e.target.value)}
-                                                onBlur={() => handleRename(file._id)}
+                                                onBlur={(e) => {
+                                                    // Don't trigger rename if Enter was just pressed
+                                                    if (!e.relatedTarget || e.relatedTarget.tagName !== 'INPUT') {
+                                                        handleRename(file._id);
+                                                    }
+                                                }}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleRename(file._id);
-                                                    if (e.key === 'Escape') cancelEditing();
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        e.target.blur();
+                                                        handleRename(file._id);
+                                                    }
+                                                    if (e.key === 'Escape') {
+                                                        e.preventDefault();
+                                                        cancelEditing();
+                                                    }
                                                 }}
                                                 className="flex-1 bg-gray-600 text-white px-1 rounded text-sm focus:outline-none"
                                                 autoFocus
