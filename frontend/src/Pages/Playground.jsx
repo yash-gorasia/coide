@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import ActiveUsers from '../Components/ActiveUsers'
@@ -31,8 +31,26 @@ const Playground = () => {
   const [processing, setProcessing] = useState(false)
   const [outputDetails, setOutputDetails] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Refs to store current values for auto-save
+  const activeFileRef = useRef(activeFile);
+  const codeRef = useRef(code);
+  const updateFileRef = useRef(updateFile);
 
   const navigate = useNavigate();
+
+  // Update refs when values change
+  useEffect(() => {
+    activeFileRef.current = activeFile;
+  }, [activeFile]);
+
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
+
+  useEffect(() => {
+    updateFileRef.current = updateFile;
+  }, [updateFile]);
 
   // Store room ID in localStorage when component mounts (for backward compatibility)
   useEffect(() => {
@@ -74,13 +92,17 @@ const Playground = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [activeFile, code, updateFile]);
 
-  // Register auto-save on room leave
+  // Register auto-save on room leave (only once)
   useEffect(() => {
     const autoSaveCallback = async () => {
-      if (activeFile && code) {
+      const currentActiveFile = activeFileRef.current;
+      const currentCode = codeRef.current;
+      const currentUpdateFile = updateFileRef.current;
+      
+      if (currentActiveFile && currentCode) {
         try {
-          await updateFile(activeFile._id, code, activeFile.language);
-          console.log('Auto-saved file on room leave:', activeFile.fileName);
+          await currentUpdateFile(currentActiveFile._id, currentCode, currentActiveFile.language);
+          console.log('Auto-saved file on room leave:', currentActiveFile.fileName);
         } catch (error) {
           console.error('Failed to auto-save on room leave:', error);
         }
@@ -88,7 +110,13 @@ const Playground = () => {
     };
 
     saveService.onRoomLeave(autoSaveCallback);
-  }, [activeFile, code, updateFile]);
+    
+    // Cleanup: remove callback when component unmounts
+    return () => {
+      // Clear all callbacks to prevent memory leaks
+      saveService.saveCallbacks = [];
+    };
+  }, []); // Empty dependency array - register only once
 
   // Update code when active file changes
   useEffect(() => {
