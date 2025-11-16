@@ -14,6 +14,7 @@ import { toast } from 'react-toastify'
 import { useSocket } from '../Context/SocketContext'
 import { useFiles } from '../Context/FileContext'
 import ACTIONS from '../Constants/socketEvents'
+import { saveService } from '../Services/saveService'
 
 const javascriptDefault = `// Write your code here\nconsole.log("Hello World!");`
 
@@ -29,6 +30,7 @@ const Playground = () => {
   const [theme, setTheme] = useState("Oceanic Next")
   const [processing, setProcessing] = useState(false)
   const [outputDetails, setOutputDetails] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const navigate = useNavigate();
 
@@ -46,10 +48,53 @@ const Playground = () => {
     }
   }, [roomId, username, navigate]);
 
+  // Manual save function
+  const saveCurrentFile = async () => {
+    if (activeFile && code) {
+      try {
+        await updateFile(activeFile._id, code, activeFile.language);
+        setHasUnsavedChanges(false); // Mark as saved
+        toast.success(`File "${activeFile.fileName}" saved successfully!`);
+      } catch (error) {
+        toast.error(`Failed to save file: ${error.message}`);
+      }
+    }
+  };
+
+  // Keyboard shortcut listener for Ctrl+S
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.key === 's') {
+        event.preventDefault(); // Prevent browser save dialog
+        saveCurrentFile();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activeFile, code, updateFile]);
+
+  // Register auto-save on room leave
+  useEffect(() => {
+    const autoSaveCallback = async () => {
+      if (activeFile && code) {
+        try {
+          await updateFile(activeFile._id, code, activeFile.language);
+          console.log('Auto-saved file on room leave:', activeFile.fileName);
+        } catch (error) {
+          console.error('Failed to auto-save on room leave:', error);
+        }
+      }
+    };
+
+    saveService.onRoomLeave(autoSaveCallback);
+  }, [activeFile, code, updateFile]);
+
   // Update code when active file changes
   useEffect(() => {
     if (activeFile) {
       setCode(activeFile.content || '');
+      setHasUnsavedChanges(false); // Reset unsaved changes when switching files
       
       // Set language based on file
       const fileLanguage = languageOptions.find(lang => 
@@ -142,20 +187,18 @@ const Playground = () => {
     }
   };
 
-  const onChange = async (action, data) => {
+  const onChange = (action, data) => {
     switch (action) {
       case "code": {
         setCode(data);
         
-        // Save to active file if one is selected
-        if (activeFile) {
-          await updateFile(activeFile._id, data, activeFile.language);
+        // Mark file as having unsaved changes
+        if (activeFile && data !== activeFile.content) {
+          setHasUnsavedChanges(true);
         }
         
-        // Emit socket event for real-time sync
-        if (socket) {
-          socket.emit(ACTIONS.CODE_CHANGE, { roomId, code: data });
-        }
+        // Note: Socket emission is now handled by CodeEditorWindow component
+        // File saving is now manual (Ctrl+S) or auto-save on room leave
       }
         break;
       default: {
@@ -226,8 +269,17 @@ const Playground = () => {
         {/* Top Bar */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-semibold text-white">
-              {activeFile ? activeFile.fileName : 'No file selected'}
+            <h1 className="text-lg font-semibold text-white flex items-center">
+              {activeFile ? (
+                <>
+                  {activeFile.fileName}
+                  {hasUnsavedChanges && (
+                    <span className="ml-2 w-2 h-2 bg-orange-400 rounded-full" title="Unsaved changes"></span>
+                  )}
+                </>
+              ) : (
+                'No file selected'
+              )}
             </h1>
             <div className="flex space-x-2">
               <LanguagesDropdown onSelectChange={onSelectChange} />
@@ -236,6 +288,19 @@ const Playground = () => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <button
+              onClick={saveCurrentFile}
+              disabled={!code || !activeFile || !hasUnsavedChanges}
+              className={`px-4 py-2 rounded-lg text-white font-medium transition-all flex items-center space-x-2 ${
+                !code || !activeFile || !hasUnsavedChanges
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-emerald-600 hover:to-green-500 shadow-md hover:shadow-lg"
+              }`}
+            >
+              <span>💾</span>
+              <span>Save {hasUnsavedChanges ? '*' : ''}</span>
+              <span className="text-xs opacity-75">(Ctrl+S)</span>
+            </button>
             <button
               onClick={handleCompile}
               disabled={!code || processing || !activeFile}

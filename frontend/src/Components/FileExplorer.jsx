@@ -95,28 +95,8 @@ const FileExplorer = () => {
         return languageMap[extension] || 'plaintext';
     };
 
-    const getFileIcon = (fileName) => {
-        const extension = fileName.split('.').pop()?.toLowerCase();
-        const iconMap = {
-            'js': '🟨',
-            'jsx': '⚛️',
-            'ts': '🔷',
-            'tsx': '⚛️',
-            'py': '🐍',
-            'java': '☕',
-            'cpp': '⚙️',
-            'c': '⚙️',
-            'cs': '💜',
-            'php': '🐘',
-            'rb': '💎',
-            'go': '🐹',
-            'rs': '🦀',
-            'html': '🌐',
-            'css': '🎨',
-            'json': '📋',
-            'md': '📝'
-        };
-        return iconMap[extension] || '📄';
+    const getFileIcon = () => {
+        return <FaFile className="text-gray-400" />;
     };
 
     if (loading) {
@@ -171,7 +151,7 @@ const FileExplorer = () => {
                                     onClick={() => openFile(file)}
                                 >
                                     <div className="flex items-center flex-1 min-w-0">
-                                        <span className="mr-2">{getFileIcon(file.fileName)}</span>
+                                        <span className="mr-2">{getFileIcon()}</span>
                                         {editingFileId === file._id ? (
                                             <input
                                                 value={editFileName}

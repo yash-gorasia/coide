@@ -60,7 +60,6 @@ const roomSchema = new mongoose.Schema({
 // Index for faster queries
 roomSchema.index({ createdBy: 1, createdAt: -1 });
 roomSchema.index({ 'participants.userId': 1 });
-roomSchema.index({ roomId: 1 });
 
 // Virtual for participant count
 roomSchema.virtual('participantCount').get(function() {

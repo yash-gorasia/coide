@@ -4,6 +4,7 @@ import { useSocket } from "../Context/SocketContext";
 import { toast } from "react-toastify";
 import Client from "./Client";
 import { FiUsers, FiCopy, FiLogOut, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { saveService } from "../Services/saveService";
 
 const ActiveUsers = () => {
   const { clients } = useSocket();
@@ -20,7 +21,16 @@ const ActiveUsers = () => {
     }
   };
 
-  const handleLeave = () => {
+  const handleLeave = async () => {
+    // Auto-save all files before leaving
+    try {
+      await saveService.triggerRoomLeaveSave();
+      toast.success("Files auto-saved before leaving room");
+    } catch (error) {
+      console.error('Error during auto-save:', error);
+      toast.warning("Some files might not have been saved");
+    }
+    
     // Only clear room-specific data, keep user authentication
     localStorage.removeItem("room-id");
     localStorage.removeItem("room-name");
