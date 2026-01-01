@@ -4,7 +4,6 @@ import {
     FaFile, 
     FaPlus, 
     FaTrash, 
-    FaEdit, 
     FaFolder,
     FaChevronDown,
     FaChevronRight 
@@ -40,37 +39,10 @@ const FileExplorer = () => {
         }
     };
 
-    const handleRename = async (fileId) => {
-        if (!editFileName.trim()) {
-            cancelEditing();
-            return;
-        }
-        
-        // Prevent duplicate calls
-        if (editingFileId !== fileId) return;
-        
-        const success = await renameFile(fileId, editFileName.trim());
-        
-        if (success) {
-            setEditingFileId(null);
-            setEditFileName('');
-        }
-    };
-
     const handleDelete = async (fileId, fileName) => {
         if (window.confirm(`Are you sure you want to delete "${fileName}"?`)) {
             await deleteFile(fileId);
         }
-    };
-
-    const startEditing = (file) => {
-        setEditingFileId(file._id);
-        setEditFileName(file.fileName);
-    };
-
-    const cancelEditing = () => {
-        setEditingFileId(null);
-        setEditFileName('');
     };
 
     const getLanguageFromFileName = (fileName) => {
@@ -158,47 +130,10 @@ const FileExplorer = () => {
                                 >
                                     <div className="flex items-center flex-1 min-w-0">
                                         <span className="mr-2">{getFileIcon()}</span>
-                                        {editingFileId === file._id ? (
-                                            <input
-                                                value={editFileName}
-                                                onChange={(e) => setEditFileName(e.target.value)}
-                                                onBlur={(e) => {
-                                                    // Don't trigger rename if Enter was just pressed
-                                                    if (!e.relatedTarget || e.relatedTarget.tagName !== 'INPUT') {
-                                                        handleRename(file._id);
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        e.target.blur();
-                                                        handleRename(file._id);
-                                                    }
-                                                    if (e.key === 'Escape') {
-                                                        e.preventDefault();
-                                                        cancelEditing();
-                                                    }
-                                                }}
-                                                className="flex-1 bg-gray-600 text-white px-1 rounded text-sm focus:outline-none"
-                                                autoFocus
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        ) : (
-                                            <span className="text-sm truncate">{file.fileName}</span>
-                                        )}
+                                        <span className="text-sm truncate">{file.fileName}</span>
                                     </div>
                                     
                                     <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                startEditing(file);
-                                            }}
-                                            className="text-gray-400 hover:text-white"
-                                            title="Rename"
-                                        >
-                                            <FaEdit className="w-3 h-3" />
-                                        </button>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();

@@ -125,14 +125,7 @@ export const handleSocketConnection = (io) => {
             });
         });
 
-        socket.on(ACTIONS.FILE_RENAMED, async ({ roomId, file }) => {
-            socket.to(roomId).emit(ACTIONS.FILE_RENAMED, {
-                file,
-                renamedBy: socket.user.username
-            });
-        });
-
-        socket.on(ACTIONS.FILE_OPENED, async ({ roomId, fileId, fileName }) => {
+        socket.on(ACTIONS.FILE_DELETED, async ({ roomId, fileId }) => {
             socket.to(roomId).emit(ACTIONS.FILE_OPENED, {
                 fileId,
                 fileName,

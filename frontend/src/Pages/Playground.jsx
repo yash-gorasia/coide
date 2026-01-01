@@ -10,6 +10,7 @@ import ThemeDropdown from '../Components/ThemeDropdown'
 import { defineTheme } from '../Lib/defineTheme'
 import OutputWindow from '../Components/OutputWindow'
 import OutputDetails from '../Components/OutputDetails'
+import ChatBot from '../Components/ChatBot'
 import { toast } from 'react-toastify'
 import { useSocket } from '../Context/SocketContext'
 import { useFiles } from '../Context/FileContext'
@@ -388,6 +389,9 @@ const Playground = () => {
           <ActiveUsers />
         </div>
       </div>
+
+      {/* AI Chatbot - Floating */}
+      <ChatBot code={code} language={language?.value} />
     </div>
   );
 }

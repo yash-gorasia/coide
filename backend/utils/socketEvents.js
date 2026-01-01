@@ -11,7 +11,6 @@ const ACTIONS = {
     FILE_CREATED: 'file-created',
     FILE_UPDATED: 'file-updated',
     FILE_DELETED: 'file-deleted',
-    FILE_RENAMED: 'file-renamed',
     FILE_OPENED: 'file-opened',
     SYNC_FILES: 'sync-files',
 

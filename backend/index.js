@@ -9,6 +9,7 @@ import { connectDB } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import fileRoutes from './routes/files.js';
 import roomRoutes from './routes/rooms.js';
+import chatbotRoutes from './routes/chatbot.js';
 import { authenticateSocket, handleSocketConnection } from './socket/socketHandler.js';
 
 // Get the directory name of the current module
@@ -38,6 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

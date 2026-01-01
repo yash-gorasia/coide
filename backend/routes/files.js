@@ -200,77 +200,7 @@ router.put('/:fileId', [
     }
 });
 
-// Rename file
-router.patch('/:fileId/rename', [
-    authenticateToken,
-    body('fileName')
-        .notEmpty()
-        .withMessage('File name is required')
-        .isLength({ min: 1, max: 100 })
-        .withMessage('File name must be between 1 and 100 characters')
-        .matches(/^[^<>:"/\\|?*\x00-\x1f]+$/)
-        .withMessage('File name contains invalid characters')
-], async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: errors.array()
-            });
-        }
-
-        const { fileId } = req.params;
-        const { fileName } = req.body;
-
-        const file = await File.findById(fileId);
-
-        if (!file || !file.isActive) {
-            return res.status(404).json({
-                success: false,
-                message: 'File not found'
-            });
-        }
-
-        // Check if new name conflicts with existing file in room
-        const existingFile = await File.findOne({
-            _id: { $ne: fileId },
-            roomId: file.roomId,
-            fileName,
-            isActive: true
-        });
-
-        if (existingFile) {
-            return res.status(400).json({
-                success: false,
-                message: 'File with this name already exists in the room'
-            });
-        }
-
-        file.fileName = fileName;
-        file.lastModifiedBy = req.user._id;
-        await file.save();
-
-        // Populate user data before sending response
-        await file.populate('createdBy', 'username');
-        await file.populate('lastModifiedBy', 'username');
-
-        res.json({
-            success: true,
-            message: 'File renamed successfully',
-            file
-        });
-    } catch (error) {
-        console.error('Rename file error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error renaming file'
-        });
-    }
-});
-
-// Delete file (soft delete)
+// Delete file (hard delete)
 router.delete('/:fileId', authenticateToken, async (req, res) => {
     try {
         const { fileId } = req.params;
@@ -284,15 +214,16 @@ router.delete('/:fileId', authenticateToken, async (req, res) => {
             });
         }
 
-        // Soft delete
-        file.isActive = false;
-        file.lastModifiedBy = req.user._id;
-        await file.save();
+        // Store roomId before deletion for updating room file count
+        const roomId = file.roomId;
+
+        // Hard delete - completely remove from database
+        await File.findByIdAndDelete(fileId);
 
         // Update room file count
-        const activeFileCount = await File.countDocuments({ roomId: file.roomId, isActive: true });
+        const activeFileCount = await File.countDocuments({ roomId, isActive: true });
         await Room.findOneAndUpdate(
-            { roomId: file.roomId },
+            { roomId },
             { fileCount: activeFileCount, lastActivity: new Date() }
         );
 

@@ -115,50 +115,6 @@ export const FileProvider = ({ children }) => {
         }
     };
 
-    // Rename file
-    const renameFile = async (fileId, fileName) => {
-        if (!fileId || !fileName || !token) {
-            toast.error('Invalid file data');
-            return false;
-        }
-
-        try {
-            const response = await axios.patch(
-                `${import.meta.env.VITE_BACKEND_URL}/api/files/${fileId}/rename`,
-                { fileName },
-                { headers: getHeaders() }
-            );
-
-            if (response.data.success) {
-                const renamedFile = response.data.file;
-                
-                setFiles(prev => prev.map(file => 
-                    file._id === fileId ? renamedFile : file
-                ));
-                
-                if (activeFile?._id === fileId) {
-                    setActiveFile(renamedFile);
-                }
-                
-                // Emit socket event to notify other users
-                if (socket) {
-                    socket.emit(ACTIONS.FILE_RENAMED, { roomId, file: renamedFile });
-                }
-                
-                toast.success('File renamed successfully');
-                return renamedFile;
-            } else {
-                toast.error(response.data.message || 'Failed to rename file');
-                return false;
-            }
-        } catch (error) {
-            console.error('Rename file error:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to rename file';
-            toast.error(errorMessage);
-            return false;
-        }
-    };
-
     // Delete file
     const deleteFile = async (fileId) => {
         if (!fileId || !token) return;
@@ -231,14 +187,6 @@ export const FileProvider = ({ children }) => {
             }
         });
 
-        socket.on(ACTIONS.FILE_RENAMED, ({ file, renamedBy }) => {
-            setFiles(prev => prev.map(f => f._id === file._id ? file : f));
-            if (activeFile?._id === file._id) {
-                setActiveFile(file);
-            }
-            toast.info(`${renamedBy} renamed file to: ${file.fileName}`);
-        });
-
         socket.on(ACTIONS.FILE_OPENED, ({ fileName, openedBy }) => {
             toast.info(`${openedBy} opened: ${fileName}`);
         });
@@ -263,7 +211,6 @@ export const FileProvider = ({ children }) => {
         loading,
         createFile,
         updateFile,
-        renameFile,
         deleteFile,
         openFile,
         fetchFiles,

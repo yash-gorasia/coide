@@ -11,7 +11,6 @@ const ACTIONS = {
     FILE_CREATED: 'file-created',
     FILE_UPDATED: 'file-updated',
     FILE_DELETED: 'file-deleted',
-    FILE_RENAMED: 'file-renamed',
     FILE_OPENED: 'file-opened',
     SYNC_FILES: 'sync-files',
 
@@ -22,7 +21,14 @@ const ACTIONS = {
 
     //  events for ICE candidates
     ICE_CANDIDATE: 'ice-candidate',
-    ADD_ICE_CANDIDATE: 'add-ice-candidate'
+    ADD_ICE_CANDIDATE: 'add-ice-candidate',
+
+    // Chat/Code Assistant Events
+    CHAT_SEND: 'chat:send',
+    CHAT_RESPONSE: 'chat:response',
+    CHAT_ERROR: 'chat:error',
+    CHAT_LOADING: 'chat:loading',
+    CHAT_MESSAGE: 'chat:message'
 }
 
 export default ACTIONS;
