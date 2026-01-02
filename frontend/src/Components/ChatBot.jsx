@@ -31,7 +31,7 @@ const ChatBot = ({ code, language }) => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://coide.onrender.com/api/chatbot', {
+      const response = await axios.post('https://coide.onrender.com/api/chatbot', {
         code: code || '',
         language: language || 'javascript',
         userMessage: input
