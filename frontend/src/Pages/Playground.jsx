@@ -135,6 +135,45 @@ const Playground = () => {
     }
   }, [activeFile]);
 
+  // Listen for real-time code changes from other users
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCodeChange = ({ code: incomingCode }) => {
+      console.log('Received CODE_CHANGE event:', incomingCode.substring(0, 50));
+      setCode(incomingCode);
+    };
+
+    const handleSyncCode = ({ code: syncCode }) => {
+      console.log('Received SYNC_CODE event:', syncCode.substring(0, 50));
+      setCode(syncCode);
+    };
+
+    socket.on(ACTIONS.CODE_CHANGE, handleCodeChange);
+    socket.on(ACTIONS.SYNC_CODE, handleSyncCode);
+
+    return () => {
+      socket.off(ACTIONS.CODE_CHANGE, handleCodeChange);
+      socket.off(ACTIONS.SYNC_CODE, handleSyncCode);
+    };
+  }, [socket]);
+
+  // Listen for code execution results from other users
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCodeExecutionResult = ({ outputDetails: details, executedBy }) => {
+      setOutputDetails(details);
+      toast.info(`${executedBy} executed code`);
+    };
+
+    socket.on(ACTIONS.CODE_EXECUTION_RESULT, handleCodeExecutionResult);
+
+    return () => {
+      socket.off(ACTIONS.CODE_EXECUTION_RESULT, handleCodeExecutionResult);
+    };
+  }, [socket]);
+
   const handleCompile = () => {
     setProcessing(true);
     const formData = {

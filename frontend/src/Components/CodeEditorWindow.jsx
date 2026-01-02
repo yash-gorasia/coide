@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
 import { useSocket } from "../Context/SocketContext";
+import { useFiles } from "../Context/FileContext";
 import ACTIONS from "../Constants/socketEvents";
 
 const CodeEditorWindow = ({ code, onChange, language, theme }) => {
   const [value, setValue] = useState(code || "");
   const { socket } = useSocket();
+  const { activeFile, updateFile } = useFiles();
   const roomId = localStorage.getItem("room-id");
   
   // Refs for better state management
@@ -13,6 +15,7 @@ const CodeEditorWindow = ({ code, onChange, language, theme }) => {
   const isTypingRef = useRef(false);
   const lastUserInputRef = useRef(Date.now());
   const debounceTimerRef = useRef(null);
+  const persistenceTimerRef = useRef(null);
 
   useEffect(() => {
     setValue(code);
@@ -31,10 +34,27 @@ const CodeEditorWindow = ({ code, onChange, language, theme }) => {
     
     debounceTimerRef.current = setTimeout(() => {
       if (socket && roomId) {
+        console.log(`Emitting CODE_CHANGE for room ${roomId}, code length: ${newValue.length}`);
         socket.emit(ACTIONS.CODE_CHANGE, { roomId, code: newValue });
       }
     }, 300); // Wait 300ms after user stops typing
   }, [socket, roomId]);
+
+  // Debounced database persistence function
+  const debouncedPersist = useCallback((newValue) => {
+    if (persistenceTimerRef.current) {
+      clearTimeout(persistenceTimerRef.current);
+    }
+    
+    persistenceTimerRef.current = setTimeout(() => {
+      if (activeFile && activeFile._id && updateFile) {
+        updateFile(activeFile._id, newValue, language);
+      }
+    }, 1000); // Wait 1s after user stops typing before persisting to database
+  }, [activeFile, updateFile, language]);
+
+  // Don't listen for socket CODE_CHANGE here - let Playground handle it and pass via props
+  // This prevents race conditions and state desync
 
   // Handle editor changes with better typing detection
   const handleEditorChange = (newValue) => {
@@ -48,8 +68,11 @@ const CodeEditorWindow = ({ code, onChange, language, theme }) => {
     setValue(newValue);
     onChange("code", newValue);
     
-    // Debounce socket emission
+    // Debounce socket emission for real-time updates
     debouncedEmit(newValue);
+    
+    // Debounce database persistence
+    debouncedPersist(newValue);
     
     // Reset typing flag after a delay
     setTimeout(() => {
@@ -61,62 +84,14 @@ const CodeEditorWindow = ({ code, onChange, language, theme }) => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleCodeChange = ({ code: incomingCode }) => {
-      // Don't update if user is actively typing
-      if (isTypingRef.current) {
-        return;
-      }
-      
-      // Don't update if the code is the same
-      if (incomingCode === value) {
-        return;
-      }
-      
-      // Only update if enough time has passed since last user input
-      const timeSinceLastInput = Date.now() - lastUserInputRef.current;
-      if (timeSinceLastInput < 500) {
-        return;
-      }
-      
-      // Store cursor position before update
-      const editor = editorRef.current;
-      let position = null;
-      if (editor) {
-        position = editor.getPosition();
-      }
-      
-      // Update the value
-      setValue(incomingCode);
-      
-      // Restore cursor position after a brief delay
-      if (editor && position) {
-        setTimeout(() => {
-          try {
-            editor.setPosition(position);
-            editor.focus();
-          } catch (error) {
-            // Ignore position errors if content changed significantly
-          }
-        }, 50);
-      }
-    };
-
-    const handleSyncCode = ({ code: syncCode }) => {
-      console.log("Received SYNC_CODE event with code:", syncCode);
-      setValue(syncCode);
-    };
-
-    socket.on(ACTIONS.CODE_CHANGE, handleCodeChange);
-    socket.on(ACTIONS.SYNC_CODE, handleSyncCode);
+    // Socket listeners removed - Playground component handles socket events
+    // and updates the code prop, which we watch via the useEffect above
+    // This prevents race conditions between local and remote updates
 
     return () => {
-      socket.off(ACTIONS.CODE_CHANGE, handleCodeChange);
-      socket.off(ACTIONS.SYNC_CODE, handleSyncCode);
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      // No cleanup needed since we're not listening here anymore
     };
-  }, [socket, value]);
+  }, [socket]);
 
   return (
     <div className="overlay rounded-md overflow-hidden">

@@ -92,8 +92,10 @@ export const handleSocketConnection = (io) => {
         });
 
         socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
+            console.log(`CODE_CHANGE received from ${socket.user.username} in room ${roomId}`);
             roomCode[roomId] = code;
             socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
+            console.log(`CODE_CHANGE broadcasted to room ${roomId}`);
         });
 
         socket.on(ACTIONS.CODE_EXECUTION_RESULT, ({ roomId, outputDetails }) => {
